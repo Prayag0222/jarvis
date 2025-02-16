@@ -1,29 +1,47 @@
-import subprocess
-import requests
-import ollama
+import speech_recognition as sr
+import pyttsx3
 
-def is_internet_available():
-    try:
-        requests.get("https://www.google.com", timeout=3)
-        return True
-    except requests.ConnectionError:
-        return False
+# AI voice setup
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speech speed
+engine.setProperty('voice', 'english')  # Voice type
 
-def chat_with_ai(prompt):
-    if is_internet_available():
-        print("🔵 Online Mode: Using API")
-        response = requests.post("https://api.together.ai/v1/chat/completions", json={
-            "model": "openchat/openchat-7b",
-            "messages": [{"role": "user", "content": prompt}],
-        }, headers={"Authorization": "Bearer YOUR_API_KEY"})
-        print(response.json()["choices"][0]["message"]["content"])
-    else:
-        print("🟢 Offline Mode: Using Llama-2")
-        response = ollama.chat(model="llama2", messages=[{"role": "user", "content": prompt}])
-        print(response["message"]["content"])
+def speak(text):
+    """AI ka jawab bolne ke liye function"""
+    engine.say(text)
+    engine.runAndWait()
 
+def listen():
+    """User ki voice sunne ke liye function"""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("🎤 Listening...")
+        recognizer.adjust_for_ambient_noise(source)  # Background noise adjust
+        try:
+            audio = recognizer.listen(source, timeout=5)  # Sunne ka time limit
+            command = recognizer.recognize_google(audio)  # Speech to Text
+            print(f"👤 You: {command}")
+            return command.lower()
+        except sr.UnknownValueError:
+            print("❌ Sorry, couldn't understand.")
+            return ""
+        except sr.RequestError:
+            print("⚠️ No internet, working offline.")
+            return ""
+
+# Main AI loop
 while True:
-    user_input = input("👤 You: ")
-    if user_input.lower() == "exit":
+    user_input = listen()
+    if "exit" in user_input or "bye" in user_input:
+        speak("Goodbye! Have a nice day.")
         break
-    chat_with_ai(user_input)
+    elif "hello" in user_input:
+        speak("Hello! How can I help you?")
+    elif "your name" in user_input:
+        speak("I am your personal assistant.")
+    elif "time" in user_input:
+        from datetime import datetime
+        now = datetime.now().strftime("%I:%M %p")
+        speak(f"The time is {now}")
+    else:
+        speak("I didn't understand that.")
