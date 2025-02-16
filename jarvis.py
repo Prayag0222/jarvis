@@ -1,47 +1,75 @@
-import speech_recognition as sr
+import os
 import pyttsx3
+import speech_recognition as sr
+import requests
 
-# AI voice setup
-engine = pyttsx3.init()
-engine.setProperty('rate', 150)  # Speech speed
-engine.setProperty('voice', 'english')  # Voice type
+# ✅ Voice Engine Initialize (For Termux)
+engine = pyttsx3.init(driverName='espeak')
+engine.setProperty('voice', 'english')  # 'hi' for Hindi
+engine.setProperty('rate', 150)
+engine.setProperty('espeak_path', '/data/data/com.termux/files/usr/bin/espeak')
 
+# ✅ Speech Recognition Initialize
+recognizer = sr.Recognizer()
+
+# ✅ Function: Speak Out
 def speak(text):
-    """AI ka jawab bolne ke liye function"""
+    print(f"🤖 AI: {text}")
     engine.say(text)
     engine.runAndWait()
 
+# ✅ Function: Listen
 def listen():
-    """User ki voice sunne ke liye function"""
-    recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         print("🎤 Listening...")
-        recognizer.adjust_for_ambient_noise(source)  # Background noise adjust
+        recognizer.adjust_for_ambient_noise(source)
         try:
-            audio = recognizer.listen(source, timeout=5)  # Sunne ka time limit
-            command = recognizer.recognize_google(audio)  # Speech to Text
-            print(f"👤 You: {command}")
-            return command.lower()
+            audio = recognizer.listen(source, timeout=5)
+            text = recognizer.recognize_google(audio)
+            print(f"👤 You: {text}")
+            return text.lower()
         except sr.UnknownValueError:
-            print("❌ Sorry, couldn't understand.")
+            print("⚠️ Sorry, I didn't understand.")
             return ""
         except sr.RequestError:
-            print("⚠️ No internet, working offline.")
-            return ""
+            print("⚠️ Internet issue, switching to offline mode.")
+            return "offline"
 
-# Main AI loop
-while True:
-    user_input = listen()
-    if "exit" in user_input or "bye" in user_input:
-        speak("Goodbye! Have a nice day.")
-        break
-    elif "hello" in user_input:
-        speak("Hello! How can I help you?")
-    elif "your name" in user_input:
-        speak("I am your personal assistant.")
-    elif "time" in user_input:
-        from datetime import datetime
-        now = datetime.now().strftime("%I:%M %p")
-        speak(f"The time is {now}")
-    else:
-        speak("I didn't understand that.")
+# ✅ Function: AI Chat (Online)
+def chat_with_ai(user_input):
+    api_key = "YOUR_OPENAI_API_KEY"  # 🔴 API Key Replace karo
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": user_input}]
+    }
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    return "Sorry, I couldn't process that."
+
+# ✅ Function: AI Assistant Loop
+def ai_assistant():
+    speak("Hello! I am your AI assistant. How can I help you?")
+    
+    while True:
+        command = listen()
+        
+        if "exit" in command or "stop" in command:
+            speak("Okay, Goodbye!")
+            break
+
+        if command == "offline":
+            responses = ["I am working offline!", "Sorry, I need internet for full features.", "Ask something else!"]
+            speak(random.choice(responses))
+        else:
+            # ✅ Online Mode
+            response = chat_with_ai(command)
+            speak(response)
+
+# ✅ Start AI Assistant
+ai_assistant()
