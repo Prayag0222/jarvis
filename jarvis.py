@@ -4,10 +4,13 @@ import speech_recognition as sr
 import requests
 
 # ✅ Voice Engine Initialize (For Termux)
-engine = pyttsx3.init(driverName='espeak')
+engine = pyttsx3.init()
+engine.say("Hello, this is Termux AI Assistant")
+engine.runAndWait()
 engine.setProperty('voice', 'english')  # 'hi' for Hindi
 engine.setProperty('rate', 150)
 engine.setProperty('espeak_path', '/data/data/com.termux/files/usr/bin/espeak')
+
 
 # ✅ Speech Recognition Initialize
 recognizer = sr.Recognizer()
